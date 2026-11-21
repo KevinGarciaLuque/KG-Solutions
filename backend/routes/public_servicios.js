@@ -26,7 +26,8 @@ const {
   idemValida,
 } = require("../lib/servicios");
 
-const limitePost = limitar({ max: 10, ventanaMs: 10 * 60 * 1000 });
+// Envíos públicos por IP en 10 min (configurable con PUBLIC_POST_LIMIT)
+const limitePost = limitar({ max: Number(process.env.PUBLIC_POST_LIMIT) || 10, ventanaMs: 10 * 60 * 1000 });
 const limiteConsulta = limitar({ max: 120, ventanaMs: 10 * 60 * 1000 });
 
 const METODOS_PAGO = ["efectivo", "transferencia", "tarjeta"];

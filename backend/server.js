@@ -10,6 +10,9 @@ require("dotenv").config({ path: path.join(__dirname, ".env") });
 
 const app = express();
 
+// Detrás del proxy de Railway: req.ip debe ser la IP real del cliente (límite anti-spam por IP)
+app.set("trust proxy", 1);
+
 /* ===========================
    LOGS de errores globales
 =========================== */
