@@ -1,0 +1,24 @@
+// Datos del negocio: edita aquí los enlaces y la información de contacto.
+export const SOCIAL_LINKS = {
+  facebook: "https://facebook.com/",
+  instagram: "https://instagram.com/",
+  tiktok: "https://tiktok.com/",
+};
+
+export const CONTACT_INFO = {
+  telefonoTexto: "+504 9387-7292",
+  correo: "contacto@kgsolutions.hn",
+  direccion: "Tegucigalpa, Honduras",
+  // Coordenadas para el mapa de la página de Contacto (Google Maps embed).
+  // Importante: debe ser "maps.google.com" (no "www.google.com"), o Google
+  // bloquea el iframe por X-Frame-Options.
+  mapsEmbedUrl:
+    "https://maps.google.com/maps?q=Tegucigalpa,Honduras&output=embed",
+  horario: "Lun - Sáb, 9:00am - 6:00pm",
+};
+
+export const SITE_INFO = {
+  nombre: "KG Solutions",
+  descripcion:
+    "Tienda tecnológica, reparación de equipos y soporte técnico en Honduras.",
+};

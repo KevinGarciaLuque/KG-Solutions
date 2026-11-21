@@ -1,0 +1,804 @@
+import { useEffect, useRef, useState } from "react";
+import { Button, Modal } from "react-bootstrap";
+import { CheckCircleFill, Trash, XCircleFill } from "react-bootstrap-icons";
+import { FaBroom } from "react-icons/fa";
+import api from "../api/axios";
+import ConfirmDeleteModal from "../components/ConfirmDeleteModal";
+import { useUser } from "../context/UserContext";
+import EditProductModal from "./AddProduct/EditProductModal";
+import BarcodeModal from "../components/BarcodeModal";
+import { renderCategoriaOptions } from "../utils/categoriasOptions.jsx";
+import generarCatalogoPDF from "../utils/generarCatalogoPDF";
+import { FaFilePdf } from "react-icons/fa";
+
+// Base del backend (sin el sufijo /api) para servir /uploads.
+const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:3000/api")
+  .replace(/\/api\/?$/, "");
+
+const getImgSrc = (imagen) => {
+  if (!imagen) return "";
+  // Reconstruye contra el backend actual aunque la BD tenga un dominio viejo.
+  const idx = String(imagen).indexOf("/uploads/");
+  if (idx !== -1) return API_URL + imagen.slice(idx);
+  if (imagen.startsWith("http")) return imagen;
+  if (imagen.startsWith("uploads")) return `${API_URL}/${imagen}`;
+  return `${API_URL}/uploads/${imagen}`;
+};
+
+export default function InventoryPage({ onView }) {
+  const { user } = useUser();
+  const [items, setItems] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [ubicaciones, setUbicaciones] = useState([]);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
+  const [location, setLocation] = useState("");
+  const [stockFilter, setStockFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [loading, setLoading] = useState(false);
+   const [impuestos, setImpuestos] = useState([]);
+
+   const [unidades, setUnidades] = useState([]);
+
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    show: false,
+    productId: null,
+    nombre: "",
+  });
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    variant: "success",
+  });
+  const [editModal, setEditModal] = useState({ show: false, product: null });
+  const [barcodeModal, setBarcodeModal] = useState({ show: false, product: null });
+  const [catalogoLoading, setCatalogoLoading] = useState(false);
+  const usuario_id = user?.id;
+
+  const [codigoBuffer, setCodigoBuffer] = useState("");
+  const scannerTimeout = useRef(null);
+  const flashRef = useRef(null);
+
+  // Cargar datos
+  const cargarDatos = async () => {
+    setLoading(true);
+    try {
+      const [prodRes, catRes, ubiRes] = await Promise.all([
+        api.get("/productos"),
+        api.get("/categorias"),
+        api.get("/ubicaciones"),
+      ]);
+      setItems(prodRes.data);
+      setCategorias(catRes.data);
+      setUbicaciones(ubiRes.data);
+    } catch {
+      setToast({
+        show: true,
+        message: "Error al cargar datos",
+        variant: "danger",
+      });
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  // Escaneo de código de barras (para lector externo)
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      const char = e.key;
+      if (char.length === 1) setCodigoBuffer((prev) => prev + char);
+      if (scannerTimeout.current) clearTimeout(scannerTimeout.current);
+      scannerTimeout.current = setTimeout(() => {
+        if (codigoBuffer.length > 0) {
+          procesarCodigoEscaneado(codigoBuffer);
+          setCodigoBuffer("");
+        }
+      }, 300);
+    };
+    window.addEventListener("keypress", handleKeyPress);
+    return () => {
+      window.removeEventListener("keypress", handleKeyPress);
+      if (scannerTimeout.current) clearTimeout(scannerTimeout.current);
+    };
+    // eslint-disable-next-line
+  }, [codigoBuffer]);
+
+
+  useEffect(() => {
+    const cargarExtras = async () => {
+      try {
+        const [resImp, resUni] = await Promise.all([
+          api.get("/impuestos"),
+          api.get("/unidades"),
+        ]);
+        setImpuestos(Array.isArray(resImp.data) ? resImp.data : []);
+        setUnidades(Array.isArray(resUni.data) ? resUni.data : []);
+      } catch (e) {
+        console.error("Error cargando impuestos/unidades:", e);
+        setImpuestos([]);
+        setUnidades([]);
+      }
+    };
+
+    cargarExtras();
+  }, []);
+
+
+  const procesarCodigoEscaneado = async (codigo) => {
+    try {
+      const res = await api.get(`/productos/buscar?codigo=${codigo.trim()}`);
+      if (res.data.length > 0) {
+        const producto = res.data[0];
+        setSearch(producto.codigo);
+        beep();
+        flashAnimation();
+      } else {
+        setToast({
+          show: true,
+          message: "Producto no encontrado",
+          variant: "danger",
+        });
+      }
+    } catch {
+      setToast({ show: true, message: "Error de conexión", variant: "danger" });
+    }
+  };
+
+  const beep = () => {
+    const audio = new Audio(
+      "https://assets.mixkit.co/sfx/download/mixkit-positive-interface-beep-221.mp3",
+    );
+    audio.play();
+  };
+
+  const flashAnimation = () => {
+    if (flashRef.current) {
+      flashRef.current.classList.add("flash-success");
+      setTimeout(() => {
+        flashRef.current.classList.remove("flash-success");
+      }, 600);
+    }
+  };
+
+  const limpiarFiltros = () => {
+    setSearch("");
+    setCategory("");
+    setLocation("");
+    setStockFilter("");
+  };
+
+  // Eliminar producto (mostrar modal)
+  const askDelete = (id, nombre) =>
+    setDeleteConfirm({ show: true, productId: id, nombre: nombre });
+
+  // Confirmar eliminación
+  const handleDelete = async () => {
+    const id = deleteConfirm.productId;
+    setDeleteConfirm({ show: false, productId: null, nombre: "" });
+    if (!id) return;
+    try {
+      const response = await api.delete(
+        `/productos/${id}?usuario_id=${usuario_id}`,
+      );
+      if (response.data?.message) {
+        setToast({
+          show: true,
+          message: response.data.message,
+          variant: "success",
+        });
+      }
+      cargarDatos();
+    } catch (e) {
+      const msg =
+        e?.response?.data?.message ||
+        "No se pudo eliminar. Es posible que el producto tenga registros relacionados.";
+      setToast({
+        show: true,
+        message: msg,
+        variant: "danger",
+      });
+      console.error("Error al eliminar:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(
+        () => setToast((t) => ({ ...t, show: false })),
+        3000,
+      );
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
+
+  // Filtrado de productos
+  const filtered = items.filter(
+    (item) =>
+      (item.nombre.toLowerCase().includes(search.toLowerCase()) ||
+        item.codigo.toLowerCase().includes(search.toLowerCase())) &&
+      (category ? Number(item.categoria_id) === Number(category) : true) &&
+      (location ? Number(item.ubicacion_id) === Number(location) : true) &&
+      (stockFilter === ""
+        ? true
+        : stockFilter === "bajo"
+          ? item.stock <= (item.stock_minimo || 1)
+          : item.stock > (item.stock_minimo || 1)),
+  );
+
+  // Cuántas variantes (colores/opciones) tiene cada producto principal,
+  // para mostrar el badge "N variantes" en Inventario.
+  const totalVariantesPorPadre = items.reduce((acc, item) => {
+    if (item.producto_padre_id) {
+      acc[item.producto_padre_id] = (acc[item.producto_padre_id] || 0) + 1;
+    }
+    return acc;
+  }, {});
+
+  // Reordena la lista filtrada para que cada variante quede justo debajo de
+  // su producto principal (si ambos pasan el filtro actual).
+  const filteredAgrupado = (() => {
+    const idsEnFiltro = new Set(filtered.map((i) => i.id));
+    const yaColocados = new Set();
+    const resultado = [];
+    filtered.forEach((item) => {
+      if (yaColocados.has(item.id)) return;
+      if (item.producto_padre_id && idsEnFiltro.has(item.producto_padre_id)) {
+        return; // se coloca cuando se procese su producto principal
+      }
+      resultado.push(item);
+      yaColocados.add(item.id);
+      filtered.forEach((posibleHijo) => {
+        if (
+          posibleHijo.producto_padre_id === item.id &&
+          !yaColocados.has(posibleHijo.id)
+        ) {
+          resultado.push(posibleHijo);
+          yaColocados.add(posibleHijo.id);
+        }
+      });
+    });
+    return resultado;
+  })();
+
+  // ── Paginación (client-side sobre la lista ya filtrada y agrupada) ──
+  const totalItems = filteredAgrupado.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const startIdx = (currentPage - 1) * pageSize;
+  const pageItems = filteredAgrupado.slice(startIdx, startIdx + pageSize);
+
+  // Al cambiar filtros o tamaño de página, vuelve a la primera página
+  useEffect(() => {
+    setPage(1);
+  }, [search, category, location, stockFilter, pageSize]);
+
+  // Exportar catálogo en PDF con los productos actualmente filtrados
+  // (respeta el filtro de categoría/ubicación/búsqueda de la pantalla).
+  const handleImprimirCatalogo = async () => {
+    if (filtered.length === 0) {
+      setToast({
+        show: true,
+        message: "No hay productos para incluir en el catálogo.",
+        variant: "danger",
+      });
+      return;
+    }
+    setCatalogoLoading(true);
+    try {
+      const categoriaSeleccionada = categorias.find(
+        (c) => String(c.id) === String(category),
+      );
+      await generarCatalogoPDF({
+        productos: filteredAgrupado,
+        titulo: categoriaSeleccionada
+          ? categoriaSeleccionada.nombre
+          : "Todos los productos",
+        getImgSrc,
+      });
+    } catch {
+      setToast({
+        show: true,
+        message: "No se pudo generar el catálogo.",
+        variant: "danger",
+      });
+    }
+    setCatalogoLoading(false);
+  };
+
+  // Render
+  return (
+    <section className="container-fluid px-2 px-md-4 py-3 py-md-4">
+      <div ref={flashRef}></div>
+      <h2 className="mb-3 mb-md-4">Inventario</h2>
+
+      {/* Toast de mensajes */}
+      <Modal
+        show={toast.show}
+        onHide={() => setToast((t) => ({ ...t, show: false }))}
+        centered
+      >
+        <Modal.Body className="text-center py-4">
+          {toast.variant === "success" ? (
+            <CheckCircleFill size={50} color="#198754" className="mb-3" />
+          ) : (
+            <XCircleFill size={50} color="#dc3545" className="mb-3" />
+          )}
+          <h5
+            className={`fw-bold ${
+              toast.variant === "success" ? "text-success" : "text-danger"
+            }`}
+          >
+            {toast.message}
+          </h5>
+          <Button
+            variant={toast.variant === "success" ? "success" : "danger"}
+            className="mt-2 px-4"
+            onClick={() => setToast((t) => ({ ...t, show: false }))}
+          >
+            Cerrar
+          </Button>
+        </Modal.Body>
+      </Modal>
+
+      {/* Modal confirmación de eliminación reutilizable */}
+      <ConfirmDeleteModal
+        show={deleteConfirm.show}
+        onHide={() =>
+          setDeleteConfirm({ show: false, productId: null, nombre: "" })
+        }
+        onConfirm={handleDelete}
+        mensaje={`¿Seguro que deseas eliminar el producto "${deleteConfirm.nombre}"?`}
+        subtitulo="Si ya tiene ventas registradas no se puede borrar sin afectar el historial: en ese caso se desactivará en su lugar y dejará de aparecer en el inventario."
+      />
+
+      {/* Filtros */}
+      <div className="row g-2 mb-3 align-items-center">
+        <div className="col-sm-4">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Buscar por nombre o código..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="col-sm-2">
+          <Button
+            variant="warning"
+            className="w-100 fw-bold d-flex align-items-center justify-content-center"
+            style={{ backgroundColor: "#FFC107", borderColor: "#FFC107" }}
+            onClick={limpiarFiltros}
+          >
+            <FaBroom className="me-2" /> Limpiar
+          </Button>
+        </div>
+        <div className="col-sm-3">
+          <select
+            className="form-select"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">Todas las categorías</option>
+            {renderCategoriaOptions(categorias)}
+          </select>
+        </div>
+        <div className="col-sm-3">
+          <select
+            className="form-select"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+          >
+            <option value="">Todas las ubicaciones</option>
+            {ubicaciones.map((ubi) => (
+              <option key={ubi.id} value={ubi.id}>
+                {ubi.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="d-flex justify-content-end mb-3">
+        <Button
+          variant="outline-danger"
+          className="d-flex align-items-center gap-2"
+          onClick={handleImprimirCatalogo}
+          disabled={catalogoLoading}
+        >
+          <FaFilePdf />
+          {catalogoLoading
+            ? "Generando..."
+            : `Imprimir catálogo (${filtered.length})`}
+        </Button>
+      </div>
+
+      {/* Tabla de productos — escritorio y tablet */}
+      <div className="d-none d-md-block bg-white shadow rounded mb-4 border">
+        <div className="table-responsive">
+          <table className="table table-bordered align-middle mb-0 sticky-header">
+            <thead className="table-light sticky-top">
+              <tr>
+                <th>Imagen</th>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Categoría</th>
+                <th>Ubicación</th>
+                <th>Stock</th>
+                <th>Precio</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="text-center">
+                    Cargando...
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center text-muted">
+                    No hay productos
+                  </td>
+                </tr>
+              ) : (
+                pageItems.map((item) => (
+                  <tr key={item.id}>
+                    <td>
+                      {item.imagen ? (
+                        <img
+                          src={getImgSrc(item.imagen)}
+                          alt={item.nombre}
+                          className="img-thumbnail inventory-img-clickable"
+                          style={{ maxHeight: 50, maxWidth: 70 }}
+                          onClick={() => onView(item)}
+                          onError={(e) => (e.target.style.display = "none")}
+                        />
+                      ) : (
+                        <span
+                          className="text-muted inventory-img-clickable"
+                          onClick={() => onView(item)}
+                        >
+                          Sin imagen
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      <span
+                        className="inventory-img-clickable"
+                        onClick={() =>
+                          setBarcodeModal({ show: true, product: item })
+                        }
+                        title="Ver / imprimir código de barras"
+                      >
+                        {item.codigo}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className={
+                          item.producto_padre_id
+                            ? "inventory-variant-row"
+                            : undefined
+                        }
+                      >
+                        {item.producto_padre_id && (
+                          <span className="inventory-variant-branch">└─</span>
+                        )}
+                        {item.nombre}
+                        {item.variante_nombre && (
+                          <span className="badge bg-light text-secondary border ms-2">
+                            {item.variante_nombre}
+                          </span>
+                        )}
+                        {!item.producto_padre_id &&
+                          totalVariantesPorPadre[item.id] > 0 && (
+                            <span className="badge bg-light text-secondary border ms-2">
+                              {totalVariantesPorPadre[item.id]} variantes
+                            </span>
+                          )}
+                      </span>
+                    </td>
+                    <td>{item.categoria || "-"}</td>
+                    <td>{item.ubicacion || "-"}</td>
+                    <td>
+                      <span
+                        className={
+                          item.stock <= (item.stock_minimo || 1)
+                            ? "badge bg-danger text-white"
+                            : "badge bg-success text-white"
+                        }
+                      >
+                        {item.stock}
+                      </span>
+                    </td>
+                    <td>
+                      {item.precio
+                        ? Number(item.precio).toLocaleString("es-HN", {
+                            style: "currency",
+                            currency: "HNL",
+                          })
+                        : "-"}
+                    </td>
+                    <td>
+                      {user?.rol === "admin" && (
+                        <>
+                          <button
+                            className="btn btn-outline-primary btn-sm me-2"
+                            onClick={() =>
+                              setEditModal({ show: true, product: item })
+                            }
+                          >
+                            <i className="bi bi-pencil-square"></i>
+                          </button>
+                          <button
+                            className="btn btn-outline-danger btn-sm"
+                            onClick={() => askDelete(item.id, item.nombre)}
+                          >
+                            <Trash className="mb-1" />
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Tarjetas de productos — móvil */}
+      <div className="d-md-none mb-4">
+        {loading ? (
+          <div className="text-center text-muted py-4 bg-white rounded shadow-sm border">
+            Cargando...
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center text-muted py-4 bg-white rounded shadow-sm border">
+            No hay productos
+          </div>
+        ) : (
+          <div className="d-flex flex-column gap-2">
+            {pageItems.map((item) => (
+              <div
+                key={item.id}
+                className={`inventory-card bg-white rounded shadow-sm border p-2 ${
+                  item.producto_padre_id ? "inventory-card--variant" : ""
+                }`}
+              >
+                <div className="d-flex gap-2">
+                  <div
+                    className="inventory-card__img flex-shrink-0 inventory-img-clickable"
+                    onClick={() => onView(item)}
+                  >
+                    {item.imagen ? (
+                      <img
+                        src={getImgSrc(item.imagen)}
+                        alt={item.nombre}
+                        className="img-thumbnail"
+                        style={{ width: 56, height: 56, objectFit: "cover" }}
+                        onError={(e) => (e.target.style.display = "none")}
+                      />
+                    ) : (
+                      <div
+                        className="d-flex align-items-center justify-content-center text-muted bg-light rounded"
+                        style={{ width: 56, height: 56, fontSize: "0.65rem" }}
+                      >
+                        Sin foto
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-grow-1 min-w-0">
+                    <div className="d-flex justify-content-between align-items-start gap-2">
+                      <div className="min-w-0 flex-grow-1">
+                        <div className="inv-name-line">
+                          {item.producto_padre_id && (
+                            <span className="inventory-variant-branch">└─</span>
+                          )}
+                          <span className="inv-name-text">{item.nombre}</span>
+                          {item.variante_nombre && (
+                            <span className="badge bg-light text-secondary border">
+                              {item.variante_nombre}
+                            </span>
+                          )}
+                          {!item.producto_padre_id &&
+                            totalVariantesPorPadre[item.id] > 0 && (
+                              <span className="badge bg-light text-secondary border">
+                                {totalVariantesPorPadre[item.id]} variantes
+                              </span>
+                            )}
+                        </div>
+                        <div
+                          className="text-muted small inventory-img-clickable inventory-card__code"
+                          onClick={() =>
+                            setBarcodeModal({ show: true, product: item })
+                          }
+                        >
+                          {item.codigo}
+                        </div>
+                      </div>
+                      <span
+                        className={
+                          item.stock <= (item.stock_minimo || 1)
+                            ? "badge bg-danger text-white flex-shrink-0"
+                            : "badge bg-success text-white flex-shrink-0"
+                        }
+                      >
+                        {item.stock}
+                      </span>
+                    </div>
+                    <div className="text-muted small mt-1">
+                      {item.categoria || "-"} · {item.ubicacion || "-"}
+                    </div>
+                    <div className="d-flex justify-content-between align-items-center mt-2">
+                      <span className="fw-bold">
+                        {item.precio
+                          ? Number(item.precio).toLocaleString("es-HN", {
+                              style: "currency",
+                              currency: "HNL",
+                            })
+                          : "-"}
+                      </span>
+                      <div className="d-flex gap-1">
+                        {user?.rol === "admin" && (
+                          <>
+                            <button
+                              className="btn btn-outline-primary btn-sm"
+                              onClick={() =>
+                                setEditModal({ show: true, product: item })
+                              }
+                            >
+                              <i className="bi bi-pencil-square"></i>
+                            </button>
+                            <button
+                              className="btn btn-outline-danger btn-sm"
+                              onClick={() => askDelete(item.id, item.nombre)}
+                            >
+                              <Trash className="mb-1" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {!loading && totalItems > 0 && (
+        <PaginacionInventario
+          page={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          startIdx={startIdx}
+          shownCount={pageItems.length}
+          onPage={(p) => {
+            setPage(p);
+            flashRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+          }}
+          onPageSize={setPageSize}
+        />
+      )}
+
+      <EditProductModal
+        show={editModal.show}
+        product={editModal.product}
+        categorias={categorias}
+        ubicaciones={ubicaciones}
+        impuestos={impuestos} // ✅ NUEVO
+        unidades={unidades} // ✅ NUEVO
+        usuario_id={user?.id} // ✅ opcional (bitácora)
+        onClose={() => setEditModal({ show: false, product: null })}
+        onUpdated={cargarDatos}
+      />
+
+      <BarcodeModal
+        show={barcodeModal.show}
+        producto={barcodeModal.product}
+        onHide={() => setBarcodeModal({ show: false, product: null })}
+      />
+
+      {/* Estilo para encabezado sticky corregido */}
+    </section>
+  );
+}
+
+// ── Barra de paginación reutilizable para el inventario ──
+function PaginacionInventario({
+  page,
+  totalPages,
+  totalItems,
+  pageSize,
+  startIdx,
+  shownCount,
+  onPage,
+  onPageSize,
+}) {
+  const desde = totalItems === 0 ? 0 : startIdx + 1;
+  const hasta = startIdx + shownCount;
+
+  // Ventana compacta de números de página (máx. 5 + primera/última)
+  const paginas = [];
+  const rango = 2;
+  for (let p = 1; p <= totalPages; p++) {
+    if (p === 1 || p === totalPages || (p >= page - rango && p <= page + rango)) {
+      paginas.push(p);
+    } else if (paginas[paginas.length - 1] !== "...") {
+      paginas.push("...");
+    }
+  }
+
+  return (
+    <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+      <div className="text-muted small">
+        Mostrando <strong>{desde}</strong>–<strong>{hasta}</strong> de{" "}
+        <strong>{totalItems}</strong> productos
+      </div>
+
+      <div className="d-flex align-items-center flex-wrap gap-2">
+        <select
+          className="form-select form-select-sm w-auto"
+          value={pageSize}
+          onChange={(e) => onPageSize(Number(e.target.value))}
+          title="Productos por página"
+        >
+          {[25, 50, 100, 200].map((n) => (
+            <option key={n} value={n}>
+              {n} / página
+            </option>
+          ))}
+        </select>
+
+        <nav>
+          <ul className="pagination pagination-sm mb-0">
+            <li className={`page-item ${page <= 1 ? "disabled" : ""}`}>
+              <button
+                className="page-link"
+                onClick={() => onPage(page - 1)}
+                disabled={page <= 1}
+              >
+                ‹
+              </button>
+            </li>
+
+            {paginas.map((p, i) =>
+              p === "..." ? (
+                <li key={`e${i}`} className="page-item disabled">
+                  <span className="page-link">…</span>
+                </li>
+              ) : (
+                <li
+                  key={p}
+                  className={`page-item ${p === page ? "active" : ""}`}
+                >
+                  <button className="page-link" onClick={() => onPage(p)}>
+                    {p}
+                  </button>
+                </li>
+              ),
+            )}
+
+            <li className={`page-item ${page >= totalPages ? "disabled" : ""}`}>
+              <button
+                className="page-link"
+                onClick={() => onPage(page + 1)}
+                disabled={page >= totalPages}
+              >
+                ›
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  );
+}
