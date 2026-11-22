@@ -16,6 +16,8 @@ import { SITE_INFO } from "../config/site.js";
 const VIDEO_SRC = "/hero/laptop-assemble.mp4";
 const POSTER_SRC = "/hero/laptop-ensamblada.jpg";
 
+const GESTOS = ["touchstart", "touchend", "pointerdown", "click"];
+
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
 const prefiereMenosMovimiento = () =>
@@ -74,7 +76,19 @@ const HeroScroll = () => {
       if (!raf) raf = requestAnimationFrame(pintar);
     };
 
-    video.pause();
+    // iOS Safari (sobre todo con ahorro de batería) no descarga el video hasta que
+    // hay un gesto del usuario: se fuerza un play→pause para que cargue los fotogramas.
+    const despertar = () => {
+      const r = video.play();
+      if (r && r.then) r.then(() => video.pause()).catch(() => {});
+      else video.pause();
+    };
+    const alGesto = () => {
+      despertar();
+      GESTOS.forEach((g) => window.removeEventListener(g, alGesto));
+    };
+    GESTOS.forEach((g) => window.addEventListener(g, alGesto, { passive: true }));
+    despertar();
     alCambiar();
     window.addEventListener("scroll", alCambiar, { passive: true });
     window.addEventListener("resize", alCambiar);
@@ -83,6 +97,7 @@ const HeroScroll = () => {
       window.removeEventListener("scroll", alCambiar);
       window.removeEventListener("resize", alCambiar);
       video.removeEventListener("loadedmetadata", alCambiar);
+      GESTOS.forEach((g) => window.removeEventListener(g, alGesto));
       if (raf) cancelAnimationFrame(raf);
     };
   }, [estatico]);
@@ -147,6 +162,7 @@ const HeroScroll = () => {
           tabIndex={-1}
           aria-hidden="true"
           onLoadedData={() => setVideoListo(true)}
+          onCanPlay={() => setVideoListo(true)}
           onError={() => setEstatico(true)}
           style={{ opacity: videoListo ? 1 : 0 }}
         />
