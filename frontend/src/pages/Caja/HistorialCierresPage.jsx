@@ -40,7 +40,7 @@ export default function HistorialCierresPage({ onChangePage = () => {} }) {
     }
   }, []);
 
-  const isAdmin = rol === "admin";
+  const isAdmin = rol === "admin" || rol === "superadmin";
 
   const money = (n) => Number(n || 0).toFixed(2);
   const fmtFecha = (v) => (v ? new Date(v).toLocaleString() : "-");

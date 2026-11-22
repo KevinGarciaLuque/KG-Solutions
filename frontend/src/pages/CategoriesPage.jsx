@@ -63,7 +63,7 @@ function SubcategoriaQuickAdd({ onAdd }) {
 
 export default function CategoriesPage() {
   const { user } = useUser(); // Accede al usuario actual y su rol
-  const isAdmin = user?.rol === "admin";
+  const isAdmin = ["admin", "superadmin"].includes(user?.rol);
   const [categorias, setCategorias] = useState([]);
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");

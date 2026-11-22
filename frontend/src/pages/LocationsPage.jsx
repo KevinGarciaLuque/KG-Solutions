@@ -164,7 +164,7 @@ export default function LocationsPage() {
     <div className="container py-4">
       <h3 className="mb-3 text-center">Ubicaciones</h3>
       {/* FORMULARIO RESPONSIVO */}
-      {user?.rol === "admin" && (
+      {["admin", "superadmin"].includes(user?.rol) && (
         <form onSubmit={handleAdd} className="mb-3 row g-2 locations-form">
           <div className="col-md-4 col-12">
             <input
@@ -222,7 +222,7 @@ export default function LocationsPage() {
                 <td>{ub.nombre}</td>
                 <td style={{ wordBreak: "break-word" }}>{ub.descripcion}</td>
                 <td>
-                  {user?.rol === "admin" && (
+                  {["admin", "superadmin"].includes(user?.rol) && (
                     <>
                       <button
                         className="btn btn-warning btn-sm me-1"

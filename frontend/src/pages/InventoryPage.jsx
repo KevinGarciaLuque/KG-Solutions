@@ -525,7 +525,7 @@ export default function InventoryPage({ onView }) {
                         : "-"}
                     </td>
                     <td>
-                      {user?.rol === "admin" && (
+                      {["admin", "superadmin"].includes(user?.rol) && (
                         <>
                           <button
                             className="btn btn-outline-primary btn-sm me-2"
@@ -645,7 +645,7 @@ export default function InventoryPage({ onView }) {
                           : "-"}
                       </span>
                       <div className="d-flex gap-1">
-                        {user?.rol === "admin" && (
+                        {["admin", "superadmin"].includes(user?.rol) && (
                           <>
                             <button
                               className="btn btn-outline-primary btn-sm"
