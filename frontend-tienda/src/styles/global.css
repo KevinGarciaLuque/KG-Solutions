@@ -1,15 +1,15 @@
 :root {
   --graphite: #0b0d0c;    /* grafito profundo - fondo base */
-  --surface: #131715;     /* superficie: tarjetas, paneles */
-  --surface-2: #1a201d;   /* superficie elevada: inputs, hover */
+  --surface: #1c2420;     /* superficie: tarjetas, paneles */
+  --surface-2: #242e29;   /* superficie elevada: inputs, hover */
   --brand: #63d4a7;       /* jade - color principal */
   --brand-dark: #2fae86;  /* jade medio - hover y acentos */
-  --brand-light: rgba(99, 212, 167, 0.16); /* bordes y fondos suaves sobre oscuro */
-  --cream: #0e1110;       /* fondo de página */
+  --brand-light: rgba(99, 212, 167, 0.22); /* bordes y fondos suaves sobre oscuro */
+  --cream: #141a17;       /* fondo de página */
   --gold: #2fae86;        /* jade medio - acentos */
   --ink: #f2efe8;         /* marfil - texto principal */
-  --muted: rgba(242, 239, 232, 0.62);
-  --line: rgba(242, 239, 232, 0.09);
+  --muted: rgba(242, 239, 232, 0.74);
+  --line: rgba(242, 239, 232, 0.13);
   --glow: 0 0 24px rgba(99, 212, 167, 0.22);
 }
 
@@ -19,8 +19,8 @@ html {
 
 body {
   background:
-    radial-gradient(900px 480px at 85% -8%, rgba(99, 212, 167, 0.07), transparent 60%),
-    radial-gradient(700px 420px at -10% 40%, rgba(47, 174, 134, 0.05), transparent 60%),
+    radial-gradient(1000px 560px at 85% -8%, rgba(99, 212, 167, 0.14), transparent 62%),
+    radial-gradient(800px 480px at -10% 40%, rgba(47, 174, 134, 0.10), transparent 62%),
     var(--cream);
   background-attachment: fixed;
   color: var(--ink);
@@ -762,6 +762,7 @@ hr {
 /* Product card */
 .product-card {
   background: var(--surface);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   border: 1px solid var(--brand-light);
   border-radius: 16px;
   overflow: hidden;
@@ -769,7 +770,7 @@ hr {
 }
 
 .product-card:hover {
-  box-shadow: 0 10px 24px rgba(99, 212, 167, 0.14);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(99, 212, 167, 0.35);
   transform: translateY(-2px);
 }
 
