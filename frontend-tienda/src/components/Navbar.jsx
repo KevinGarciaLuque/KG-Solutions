@@ -44,6 +44,7 @@ const Navbar = ({ onQuieroSerCliente }) => {
   const { totalItems, cartIconRef, bump } = useCart();
   const { items: favoritos } = useFavorites();
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const close = () => setOpen(false);
 
@@ -52,6 +53,13 @@ const Navbar = ({ onQuieroSerCliente }) => {
 
   const drawerLinkClass = ({ isActive }) =>
     "tienda-drawer__link" + (isActive ? " active-link" : "");
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -69,7 +77,7 @@ const Navbar = ({ onQuieroSerCliente }) => {
   }, []);
 
   return (
-    <header className="tienda-navbar sticky-top">
+    <header className={"tienda-navbar sticky-top" + (scrolled ? " tienda-navbar--scrolled" : "")}>
       <nav className="navbar navbar-expand-lg">
         <div className="container d-flex align-items-center justify-content-between flex-nowrap">
           <div className="d-flex align-items-center gap-2">
@@ -93,7 +101,18 @@ const Navbar = ({ onQuieroSerCliente }) => {
             {NAV_ITEMS.map((item) => (
               <li className="nav-item" key={item.to}>
                 <NavLink to={item.to} end={item.end} className={linkClass}>
-                  {item.label}
+                  {({ isActive }) => (
+                    <>
+                      {isActive && (
+                        <motion.span
+                          layoutId="nav-pill"
+                          className="nav-pill"
+                          transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                        />
+                      )}
+                      {item.label}
+                    </>
+                  )}
                 </NavLink>
               </li>
             ))}
