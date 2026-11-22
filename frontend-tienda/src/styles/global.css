@@ -164,12 +164,23 @@ hr {
    Navbar: vidrio oscuro, línea de luz jade y subrayado animado
    ============================================================ */
 .tienda-navbar {
+  border-bottom: 1px solid var(--line);
+  z-index: 1030;
+  transition: box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+/* El vidrio va en un pseudo-elemento: un backdrop-filter en el propio header
+   haría que el menú lateral (position: fixed) se midiera contra la barra. */
+.tienda-navbar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: rgba(11, 13, 12, 0.72);
   -webkit-backdrop-filter: saturate(160%) blur(16px);
   backdrop-filter: saturate(160%) blur(16px);
-  border-bottom: 1px solid var(--line);
-  z-index: 1030;
-  transition: background 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+  transition: background 0.35s ease;
+  pointer-events: none;
 }
 
 /* Línea de luz jade en la base de la barra */
@@ -186,8 +197,11 @@ hr {
   pointer-events: none;
 }
 
-.tienda-navbar--scrolled {
+.tienda-navbar--scrolled::before {
   background: rgba(11, 13, 12, 0.92);
+}
+
+.tienda-navbar--scrolled {
   border-bottom-color: rgba(99, 212, 167, 0.18);
   box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
 }
