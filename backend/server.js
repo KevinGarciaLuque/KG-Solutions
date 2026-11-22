@@ -100,7 +100,7 @@ app.use(express.urlencoded({ extended: true }));
 /* ===========================
    uploads (Railway + local)
 =========================== */
-const uploadsPath = path.join(process.cwd(), "uploads"); // ✅ process.cwd() funciona bien en Railway
+const uploadsPath = process.env.UPLOADS_DIR || path.join(process.cwd(), "uploads"); // ✅ process.cwd() funciona bien en Railway
 if (!fs.existsSync(uploadsPath)) {
   fs.mkdirSync(uploadsPath, { recursive: true });
   console.log("📁 Carpeta 'uploads' creada automáticamente.");

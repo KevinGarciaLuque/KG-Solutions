@@ -6,7 +6,7 @@ const fs = require("fs");
 const router = express.Router();
 
 // ✅ Ruta segura fuera del snapshot
-const uploadDir = path.join(process.cwd(), "uploads");
+const uploadDir = process.env.UPLOADS_DIR || path.join(process.cwd(), "uploads");
 
 // ✅ Crea la carpeta si no existe
 if (!fs.existsSync(uploadDir)) {
@@ -59,7 +59,7 @@ const fs = require("fs");
 const router = express.Router();
 
 // Ruta donde se guardarán las imágenes
-const uploadDir = path.join(process.cwd(), "uploads");
+const uploadDir = process.env.UPLOADS_DIR || path.join(process.cwd(), "uploads");
 
 // Crea la carpeta si no existe
 if (!fs.existsSync(uploadDir)) {
