@@ -962,9 +962,10 @@ a {
   100% { transform: scale(1) rotate(0); }
 }
 
-
 /* ============================================================
    Hero cinematográfico (laptop que se ensambla con el scroll)
+   Capas, de atrás hacia adelante: fondo grafito → circuitos y
+   pulsos jade → sombra de piso → video con transparencia → texto.
    ============================================================ */
 .hero-scroll {
   --nav-h: 72px;
@@ -982,14 +983,23 @@ a {
   height: calc(100svh - var(--nav-h));
   min-height: 460px;
   overflow: hidden;
-  background: var(--graphite);
+  background:
+    radial-gradient(ellipse 55% 60% at 72% 50%, rgba(99, 212, 167, 0.07), transparent 70%),
+    var(--graphite);
   display: flex;
   align-items: center;
 }
 
+/* Caja 16:9 del video, pegada a la derecha y centrada en vertical.
+   Sin recortes: la laptop siempre se ve completa. */
 .hero-scroll__visor {
   position: absolute;
-  inset: 0;
+  top: 50%;
+  right: 0;
+  width: min(100%, calc((100vh - var(--nav-h)) * 0.94 * 16 / 9));
+  width: min(100%, calc((100svh - var(--nav-h)) * 0.94 * 16 / 9));
+  aspect-ratio: 16 / 9;
+  transform: translateY(-50%);
 }
 
 .hero-scroll__media {
@@ -997,8 +1007,7 @@ a {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: 70% 22%;
+  object-fit: contain;
   transition: opacity 0.4s ease;
 }
 
@@ -1006,7 +1015,7 @@ a {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(16, 18, 17, 0.96) 0%, rgba(16, 18, 17, 0.78) 34%, rgba(16, 18, 17, 0) 62%);
+  background: linear-gradient(90deg, rgba(16, 18, 17, 0.97) 0%, rgba(16, 18, 17, 0.8) 30%, rgba(16, 18, 17, 0) 58%);
 }
 
 .hero-scroll__texto {
@@ -1057,40 +1066,61 @@ a {
   color: var(--graphite);
 }
 
-/* Pistas de circuito: se concentran a la derecha; la izquierda queda limpia */
+/* ---------- Circuitos (detrás de la laptop) ---------- */
 .hero-scroll__circuito {
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 46%;
+  inset: 0;
+  width: 100%;
   height: 100%;
   pointer-events: none;
-  opacity: 0.9;
+  /* se desvanece hacia la izquierda para dejar limpia la zona del texto */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 28%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 28%);
 }
 
 .hero-scroll__circuito .trazo {
   fill: none;
-  stroke: rgba(99, 212, 167, 0.16);
-  stroke-width: 1.2;
+  stroke: rgba(99, 212, 167, 0.2);
+  stroke-width: 2;
+  stroke-linejoin: round;
 }
 
+/* Destellos: viajan por las pistas al ritmo del scroll */
 .hero-scroll__circuito .pulso {
   fill: none;
-  stroke: var(--brand);
-  stroke-width: 2;
+  stroke: #b6f5dc;
+  stroke-width: 4.2;
   stroke-linecap: round;
-  stroke-dasharray: 0.08 0.92;
-  stroke-dashoffset: calc(1 - (var(--p) * 3));
-  filter: drop-shadow(0 0 3px rgba(99, 212, 167, 0.8));
-  opacity: 0.85;
+  stroke-dasharray: 0.12 0.88;
+  stroke-dashoffset: calc(1 - (var(--p) * var(--v, 2)) + var(--o, 0));
+  filter: drop-shadow(0 0 5px var(--brand)) drop-shadow(0 0 12px rgba(99, 212, 167, 0.65));
+  opacity: calc(0.5 + var(--p) * 1.2);
 }
 
-.hero-scroll__circuito .pulso--2 {
-  stroke-dashoffset: calc(1 - (var(--p) * 2.2) + 0.3);
+.hero-scroll__circuito .hero-scroll__nodos circle {
+  fill: var(--brand);
+  filter: drop-shadow(0 0 6px var(--brand));
+  opacity: 0.2;
+  animation: hero-scroll-nodo 2.4s ease-in-out infinite;
 }
 
-.hero-scroll__circuito .pulso--3 {
-  stroke-dashoffset: calc(1 - (var(--p) * 2.6) + 0.55);
+@keyframes hero-scroll-nodo {
+  0%, 100% { opacity: 0.15; transform-box: fill-box; transform-origin: center; transform: scale(0.8); }
+  50% { opacity: 0.95; transform-box: fill-box; transform-origin: center; transform: scale(1.5); }
+}
+
+/* Sombra de piso: se enciende cuando la laptop ya está armada */
+.hero-scroll__piso {
+  position: absolute;
+  left: 36%;
+  top: 66%;
+  width: 46%;
+  height: 7%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.75), transparent 70%);
+  filter: blur(6px);
+  opacity: clamp(0, calc((var(--p) - 0.6) * 3), 1);
+  pointer-events: none;
 }
 
 .hero-scroll__scroll-hint {
@@ -1117,7 +1147,7 @@ a {
   background: linear-gradient(var(--brand), transparent);
 }
 
-/* Móvil: el video queda arriba con las piezas visibles y el texto debajo */
+/* ---------- Móvil: video arriba (todas las piezas visibles), texto debajo ---------- */
 @media (max-width: 767.98px) {
   .hero-scroll {
     --nav-h: 64px;
@@ -1128,22 +1158,27 @@ a {
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
+    padding-top: 0.5rem;
   }
 
   .hero-scroll__visor {
     position: relative;
-    inset: auto;
+    top: auto;
+    right: auto;
+    transform: none;
     flex: 0 0 auto;
     width: 100%;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 16 / 11;
   }
 
-  .hero-scroll__media {
-    object-position: 68% 50%;
+  .hero-scroll__circuito {
+    -webkit-mask-image: none;
+    mask-image: none;
+    opacity: 0.8;
   }
 
   .hero-scroll__sombra-izq {
-    background: linear-gradient(180deg, rgba(16, 18, 17, 0) 38%, var(--graphite) 62%);
+    background: linear-gradient(180deg, rgba(16, 18, 17, 0) 40%, var(--graphite) 66%);
   }
 
   .hero-scroll__texto {
@@ -1168,7 +1203,7 @@ a {
   }
 }
 
-/* Movimiento reducido (o MP4 ausente): imagen fija, sin sticky */
+/* ---------- Movimiento reducido (o videos ausentes): imagen fija, sin sticky ---------- */
 .hero-scroll--estatico {
   height: auto;
 }
@@ -1189,7 +1224,8 @@ a {
 
 @media (prefers-reduced-motion: reduce) {
   .hero-scroll__scroll-hint,
-  .hero-scroll__circuito .pulso {
+  .hero-scroll__circuito .pulso,
+  .hero-scroll__circuito .hero-scroll__nodos circle {
     display: none;
   }
 }

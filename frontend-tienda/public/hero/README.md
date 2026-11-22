@@ -1,13 +1,18 @@
 # Hero de la tienda (laptop que se ensambla con el scroll)
 
-Coloca aquí:
+Archivos que usa `src/components/HeroScroll.jsx`:
 
-- `laptop-assemble.mp4` — clip horizontal 16:9, 8–10 s, una sola toma.
-  Para que el scroll sea fluido (hacia arriba y hacia abajo), recodifícalo con
-  un fotograma clave en cada cuadro:
+- `laptop-assemble.webm` — clip 16:9 de 10 s con **fondo transparente** (VP9 + alfa).
+  Lo leen Chrome, Edge y Firefox; los circuitos se dibujan detrás de la laptop.
+- `laptop-assemble.mp4` — el mismo clip con fondo liso (#101211) para Safari/iOS,
+  que no leen alfa en WebM.
+- `laptop-ensamblada.webp` — fotograma final con transparencia: movimiento reducido,
+  carga del video o videos ausentes.
 
-      ffmpeg -i original.mp4 -an -c:v libx264 -g 1 -crf 22 -pix_fmt yuv420p -movflags +faststart laptop-assemble.mp4
+Para el scroll fluido en ambos sentidos los videos llevan un fotograma clave cada 2 cuadros
+(`-g 2`). Si reemplazas el clip, recodifícalo igual:
 
-- `laptop-ensamblada.jpg` — fotograma final (laptop armada, pantalla verde jade).
-  Se usa con movimiento reducido y mientras carga el video. Si falta el MP4,
-  el hero muestra esta imagen sin romperse.
+    ffmpeg -i original.mp4 -an -c:v libx264 -g 2 -keyint_min 2 -sc_threshold 0 -crf 26 -pix_fmt yuv420p -movflags +faststart laptop-assemble.mp4
+
+El WebM con transparencia necesita además un matte (silueta) por fotograma; ver el commit
+del hero para el método usado.
