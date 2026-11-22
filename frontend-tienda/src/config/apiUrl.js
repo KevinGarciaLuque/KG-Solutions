@@ -4,6 +4,7 @@ const raw = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 export const API_BASE_URL = String(raw)
   .replace(/[\u200B-\u200D\u2060\uFEFF\u00A0\s]/g, "")
+  .replace(/^(https?):\/*/i, "$1://") // corrige "https:/" o "https:///"
   .replace(/\/+$/, "");
 
 export default API_BASE_URL;
