@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../api/axios.js";
 import { getImgSrc } from "../utils/img.js";
 import ProductCard from "../components/ProductCard.jsx";
-import HeroCarousel from "../components/HeroCarousel.jsx";
+import HeroScroll from "../components/HeroScroll.jsx";
 
 const CATEGORIA_EMOJI = {
   computadoras: "🖥️",
@@ -162,7 +162,7 @@ const HomePage = () => {
 
   return (
     <div className="home-page">
-      <HeroCarousel />
+      <HeroScroll />
 
       <section className="py-5 category-carousel-section">
         <h2 className="h4 fw-bold mb-4 container">Categorías</h2>

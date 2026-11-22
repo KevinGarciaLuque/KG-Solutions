@@ -1,10 +1,11 @@
 :root {
-  --brand: #2563eb;       /* azul tecnológico - color principal */
-  --brand-dark: #1d4ed8;  /* azul oscuro - hover, texto de marca */
-  --brand-light: #bfdbfe; /* azul claro - bordes, fondos suaves */
-  --cream: #f1f5f9;       /* gris azulado - fondos */
-  --gold: #0891b2;        /* cian - acentos */
-  --ink: #0f172a;         /* texto principal */
+  --graphite: #101211;    /* grafito - fondos oscuros, texto sobre jade */
+  --brand: #63d4a7;       /* jade - color principal */
+  --brand-dark: #1e7f5f;  /* jade profundo - hover y texto de marca (contraste AA sobre marfil) */
+  --brand-light: #cdeee0; /* jade claro - bordes, fondos suaves */
+  --cream: #f5f3ed;       /* marfil - fondos */
+  --gold: #2fae86;        /* jade medio - acentos */
+  --ink: #101211;         /* texto principal */
 }
 
 body {
@@ -20,7 +21,7 @@ a {
 .btn-warning {
   background-color: var(--brand) !important;
   border-color: var(--brand) !important;
-  color: #fff !important;
+  color: var(--graphite) !important;
 }
 
 .btn-warning:hover,
@@ -38,7 +39,7 @@ a {
 .btn-outline-warning:hover {
   background-color: var(--brand) !important;
   border-color: var(--brand) !important;
-  color: #fff !important;
+  color: var(--graphite) !important;
 }
 
 .link-warning {
@@ -195,14 +196,14 @@ a {
 }
 
 .tienda-drawer__link:hover {
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(99, 212, 167, 0.08);
   padding-left: 0.9rem;
 }
 
 .tienda-drawer__link.active-link {
   color: var(--brand-dark);
   font-weight: 700;
-  background: rgba(37, 99, 235, 0.1);
+  background: rgba(99, 212, 167, 0.1);
 }
 
 .tienda-drawer__actions {
@@ -240,11 +241,11 @@ a {
 }
 
 .hero-slide--carteras {
-  background: linear-gradient(135deg, var(--brand) 0%, var(--gold) 100%);
+  background: linear-gradient(135deg, var(--graphite) 0%, #1b2d26 100%);
 }
 
 .hero-slide--maquillaje {
-  background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%);
+  background: linear-gradient(135deg, #17332a 0%, var(--graphite) 100%);
 }
 
 .hero-slide-logo {
@@ -424,7 +425,7 @@ a {
 
 .category-tile:hover .category-circle {
   transform: translateY(-6px);
-  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 12px 26px rgba(99, 212, 167, 0.25);
 }
 
 .category-tile span:last-child {
@@ -525,7 +526,7 @@ a {
 }
 
 .product-card:hover {
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.14);
+  box-shadow: 0 10px 24px rgba(99, 212, 167, 0.14);
   transform: translateY(-2px);
 }
 
@@ -760,7 +761,7 @@ a {
 
 /* Footer */
 .tienda-footer {
-  background: #fff5f6;
+  background: #ebe8df;
   border-top: 1px solid var(--brand-light);
   margin-top: 3rem;
 }
@@ -778,7 +779,7 @@ a {
 
 .footer-link {
   text-decoration: none;
-  color: #7a6165 !important;
+  color: #5b625e !important;
 }
 
 .footer-link:hover {
@@ -804,7 +805,7 @@ a {
   align-items: center;
   justify-content: center;
   padding: 2rem 1rem;
-  background: linear-gradient(160deg, var(--brand-dark) 0%, var(--brand) 55%, var(--gold) 100%);
+  background: linear-gradient(160deg, var(--graphite) 0%, #17332a 60%, var(--brand-dark) 100%);
 }
 
 .links-card {
@@ -822,7 +823,7 @@ a {
   height: 96px;
   border-radius: 50%;
   object-fit: cover;
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 8px 24px rgba(99, 212, 167, 0.3);
   margin-bottom: 1rem;
 }
 
@@ -832,7 +833,7 @@ a {
 }
 
 .links-subtitle {
-  color: #7a6165;
+  color: #5b625e;
   font-size: 0.95rem;
   margin-bottom: 0;
 }
@@ -857,7 +858,8 @@ a {
 }
 
 .links-btn--brand {
-  background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+  color: var(--graphite) !important;
+  background: linear-gradient(135deg, var(--brand), var(--gold));
 }
 
 .links-btn--instagram {
@@ -958,4 +960,236 @@ a {
   30% { transform: scale(1.28) rotate(-10deg); }
   60% { transform: scale(0.9) rotate(6deg); }
   100% { transform: scale(1) rotate(0); }
+}
+
+
+/* ============================================================
+   Hero cinematográfico (laptop que se ensambla con el scroll)
+   ============================================================ */
+.hero-scroll {
+  --nav-h: 72px;
+  --p: 0;
+  position: relative;
+  height: 320vh;            /* recorrido de scroll que dura la animación */
+  background: var(--graphite);
+  color: var(--cream);
+}
+
+.hero-scroll__escena {
+  position: sticky;
+  top: var(--nav-h);
+  height: calc(100vh - var(--nav-h));
+  height: calc(100svh - var(--nav-h));
+  min-height: 460px;
+  overflow: hidden;
+  background: var(--graphite);
+  display: flex;
+  align-items: center;
+}
+
+.hero-scroll__visor {
+  position: absolute;
+  inset: 0;
+}
+
+.hero-scroll__media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 70% 50%;
+  transition: opacity 0.4s ease;
+}
+
+.hero-scroll__sombra-izq {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(16, 18, 17, 0.96) 0%, rgba(16, 18, 17, 0.78) 34%, rgba(16, 18, 17, 0) 62%);
+}
+
+.hero-scroll__texto {
+  position: relative;
+  z-index: 2;
+  width: min(520px, 46%);
+  padding: 0 0 0 clamp(1.25rem, 6vw, 5rem);
+}
+
+.hero-scroll__eyebrow {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.hero-scroll__titulo {
+  margin: 0 0 1rem;
+  font-size: clamp(2rem, 4.4vw, 3.6rem);
+  line-height: 1.05;
+  font-weight: 700;
+  color: var(--cream);
+}
+
+.hero-scroll__descripcion {
+  margin: 0 0 1.75rem;
+  max-width: 440px;
+  font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+  line-height: 1.55;
+  color: rgba(245, 243, 237, 0.82);
+}
+
+.hero-scroll__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.hero-scroll .btn-outline-light {
+  color: var(--cream);
+  border-color: rgba(245, 243, 237, 0.55);
+}
+
+.hero-scroll .btn-outline-light:hover {
+  background: var(--cream);
+  border-color: var(--cream);
+  color: var(--graphite);
+}
+
+/* Pistas de circuito: se concentran a la derecha; la izquierda queda limpia */
+.hero-scroll__circuito {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 46%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.hero-scroll__circuito .trazo {
+  fill: none;
+  stroke: rgba(99, 212, 167, 0.16);
+  stroke-width: 1.2;
+}
+
+.hero-scroll__circuito .pulso {
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 0.08 0.92;
+  stroke-dashoffset: calc(1 - (var(--p) * 3));
+  filter: drop-shadow(0 0 3px rgba(99, 212, 167, 0.8));
+  opacity: 0.85;
+}
+
+.hero-scroll__circuito .pulso--2 {
+  stroke-dashoffset: calc(1 - (var(--p) * 2.2) + 0.3);
+}
+
+.hero-scroll__circuito .pulso--3 {
+  stroke-dashoffset: calc(1 - (var(--p) * 2.6) + 0.55);
+}
+
+.hero-scroll__scroll-hint {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(245, 243, 237, 0.6);
+  opacity: calc(1 - (var(--p) * 12));
+  pointer-events: none;
+}
+
+.hero-scroll__scroll-hint i {
+  width: 1px;
+  height: 26px;
+  background: linear-gradient(var(--brand), transparent);
+}
+
+/* Móvil: el video queda arriba con las piezas visibles y el texto debajo */
+@media (max-width: 767.98px) {
+  .hero-scroll {
+    --nav-h: 64px;
+    height: 360vh;
+  }
+
+  .hero-scroll__escena {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+
+  .hero-scroll__visor {
+    position: relative;
+    inset: auto;
+    flex: 0 0 auto;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+  }
+
+  .hero-scroll__media {
+    object-position: 68% 50%;
+  }
+
+  .hero-scroll__sombra-izq {
+    background: linear-gradient(180deg, rgba(16, 18, 17, 0) 38%, var(--graphite) 62%);
+  }
+
+  .hero-scroll__texto {
+    width: 100%;
+    padding: 0 1.25rem;
+    margin-top: -1.5rem;
+    text-align: center;
+  }
+
+  .hero-scroll__descripcion {
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 0.92rem;
+  }
+
+  .hero-scroll__acciones {
+    justify-content: center;
+  }
+
+  .hero-scroll__scroll-hint {
+    display: none;
+  }
+}
+
+/* Movimiento reducido (o MP4 ausente): imagen fija, sin sticky */
+.hero-scroll--estatico {
+  height: auto;
+}
+
+.hero-scroll--estatico .hero-scroll__escena {
+  position: relative;
+  top: auto;
+  height: auto;
+  min-height: min(70vh, 560px);
+}
+
+@media (max-width: 767.98px) {
+  .hero-scroll--estatico .hero-scroll__escena {
+    min-height: 0;
+    padding-bottom: 2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-scroll__scroll-hint,
+  .hero-scroll__circuito .pulso {
+    display: none;
+  }
 }
