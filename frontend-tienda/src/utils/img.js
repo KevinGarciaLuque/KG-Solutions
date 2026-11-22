@@ -1,6 +1,5 @@
 // src/utils/img.js
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API_BASE_URL from "../config/apiUrl";
 
 // La API vive en <backend>/api, los archivos subidos en <backend>/uploads
 const UPLOADS_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, "");
